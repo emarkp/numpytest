@@ -12,7 +12,7 @@ number_of_electrons_wide = 5
 number_of_layers = 7
 charge_electron = 1 / number_of_electrons_wide ** 2  # this is to ensure the amount of charge per layer is constant
 TIME_END = 100
-TIME_STEPS = 100
+TIME_STEPS = 1000
 DT = TIME_END / TIME_STEPS
 start_x = 25 # this is where we will start plotting y from
 number_of_evaluation_points = 100  # make this larger for more resolution in the x axis
@@ -25,16 +25,18 @@ resonant_angular_frequency = np.sqrt(hookes_constant / mass_electron)
 angular_frequency = resonant_angular_frequency * 0.99
 
 fig, ax = plt.subplots()
+ax.set_ylim(-1,1)
 x_f = np.linspace(0, TIME_END, number_of_evaluation_points)
 line, = ax.plot(x_f, np.zeros(x_f.shape))
 
 def gaussian(t, y):
-    coefficient = 50 / (sigma * np.sqrt(2 * np.pi))
-    exponential_term = np.exp(-0.5 * ((y + c * t - material_y_width / 4) / sigma) ** 2)
+    coefficient = 10 / (sigma * np.sqrt(2 * np.pi))
+    exponential_term = np.exp(-0.5 * ((c * t - y) / sigma) ** 2)
+    # exponential_term = np.exp(-0.5 * ((y + c * t - material_y_width / 4) / sigma) ** 2)
     return coefficient * exponential_term
 
 def animate(t):
-    line.set_ydata(x_f, pulse[t])
+    line.set_ydata(pulse[t,:])
     return line,
 
 if __name__ == '__main__':
@@ -46,18 +48,14 @@ if __name__ == '__main__':
 
     # We are only going to evaluate the field along the line y = 0, z = 0. These are the y values for those points
     # Also, our convention will be to pack arrays so that the final index is the values associated w/ x
-    print(x_f)
+    # print(x_f)
 
     t_f = np.arange(stop=TIME_END, step=DT)
-    print(t_f)
 
     x_mat = np.tile(x_f, (t_f.size, 1 ))
     t_mat = np.transpose(np.tile(t_f, (x_f.size, 1 )))
 
     pulse = gaussian(t_mat, x_mat)
-
-    # print(g)
-    print (pulse.shape)
 
     ani = animation.FuncAnimation(fig, animate, interval=20, blit=True, save_count=50)
     plt.show()
