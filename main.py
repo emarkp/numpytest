@@ -2,9 +2,9 @@ import matplotlib.pyplot as plt
 import matplotlib
 import numpy as np
 import matplotlib.animation as animation
+matplotlib.use('TkAgg')
 #from scipy import interpolate
 
-matplotlib.use('TkAgg')
 # Constants
 material_y_width = 100
 material_x_z_width = 10
@@ -14,8 +14,7 @@ charge_electron = 1 / number_of_electrons_wide ** 2  # this is to ensure the amo
 TIME_END = 100
 TIME_STEPS = 1000
 DT = TIME_END / TIME_STEPS
-start_x = 25 # this is where we will start plotting y from
-number_of_evaluation_points = 100  # make this larger for more resolution in the x axis
+number_of_evaluation_points = 1000  # make this larger for more resolution in the x axis
 c = 5  # speed of light
 hookes_constant = 0.1
 mass_electron = 1
@@ -30,10 +29,16 @@ x_f = np.linspace(0, TIME_END, number_of_evaluation_points)
 line, = ax.plot(x_f, np.zeros(x_f.shape))
 
 def gaussian(t, y):
-    coefficient = 10 / (sigma * np.sqrt(2 * np.pi))
+    coefficient = 5 / (sigma * np.sqrt(2 * np.pi))
     exponential_term = np.exp(-0.5 * ((c * t - y) / sigma) ** 2)
     # exponential_term = np.exp(-0.5 * ((y + c * t - material_y_width / 4) / sigma) ** 2)
     return coefficient * exponential_term
+
+def single_pulse():
+    pulse = np.sin(np.linspace(0,100, 200)*(-2)*(np.pi/100))
+    pulse[0]=pulse[-1]=0
+    return pulse
+
 
 def animate(t):
     line.set_ydata(pulse[t,:])
@@ -56,6 +61,8 @@ if __name__ == '__main__':
     t_mat = np.transpose(np.tile(t_f, (x_f.size, 1 )))
 
     pulse = gaussian(t_mat, x_mat)
+    pul = single_pulse()
 
     ani = animation.FuncAnimation(fig, animate, interval=20, blit=True, save_count=50)
     plt.show()
+    pass
