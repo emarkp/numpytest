@@ -1,9 +1,10 @@
-import matplotlib.pyplot as plt
-import matplotlib
 import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from scipy import interpolate
+
 matplotlib.use('TkAgg')
-#from scipy import interpolate
 
 # Constants
 material_y_width = 100
@@ -12,21 +13,24 @@ number_of_electrons_wide = 5
 number_of_layers = 7
 charge_electron = 1 / number_of_electrons_wide ** 2  # this is to ensure the amount of charge per layer is constant
 TIME_END = 100
-TIME_STEPS = 1000
+TIME_STEPS = 100
 DT = TIME_END / TIME_STEPS
-number_of_evaluation_points = 1000  # make this larger for more resolution in the x axis
-c = 5  # speed of light
+number_of_evaluation_points = 1000  # make this larger for more resolution in the x-axis
+c = 1  # speed of light
 hookes_constant = 0.1
 mass_electron = 1
 damping_constant = 0
 sigma = 5
 resonant_angular_frequency = np.sqrt(hookes_constant / mass_electron)
 angular_frequency = resonant_angular_frequency * 0.99
+pulse_time = 100
+pulse_amp = 1
 
 fig, ax = plt.subplots()
-ax.set_ylim(-1,1)
+ax.set_ylim(-1, 1)
 x_f = np.linspace(0, TIME_END, number_of_evaluation_points)
 line, = ax.plot(x_f, np.zeros(x_f.shape))
+
 
 def gaussian(t, y):
     coefficient = 5 / (sigma * np.sqrt(2 * np.pi))
@@ -34,15 +38,32 @@ def gaussian(t, y):
     # exponential_term = np.exp(-0.5 * ((y + c * t - material_y_width / 4) / sigma) ** 2)
     return coefficient * exponential_term
 
-def single_pulse():
-    pulse = np.sin(np.linspace(0,100, 200)*(-2)*(np.pi/100))
-    pulse[0]=pulse[-1]=0
+
+def single_pulse_sin():
+    pulse = np.sin(np.linspace(0, 100, 200) * (2) * (np.pi / 100))
+    pulse[0] = pulse[-1] = 0
+    pulse[1] = pulse[-2] = 0
     return pulse
 
 
+# def multi_pulse(t_f, x):
+#     r = np.empty((t_f.size, x.size))
+#     pul = interpolate.interp1d(px * pulse_time, py * pulse_amp, kind='linear', fill_value='extrapolate')
+#     for i in range(0, t_f.size):
+#         interp = pul(x - t_f[i])
+#         r[i, :] = interp
+#     return r
+
+
 def animate(t):
-    line.set_ydata(pulse[t,:])
+    # pulse is the field at x=0 at time t=interp
+    # So pulse at (t,xt) = xt - time to travel from x=0
+    line.set_ydata(pi((-x_f/c) + t))
+    # line.set_ydata(pulse[t,:])
+    # if (t < new_pulse[:,0].size):
+    #     line.set_ydata(new_pulse[t,:])
     return line,
+
 
 if __name__ == '__main__':
     # xvals = np.array([ 166, 167, 168, 170, 171, 173, 181, 183, 190, 196, 208, 230, 244, 274, 289, 312, 346, 367, 382, 398, 412, 417, 426, 432, 437, 443, 447, 453, 459, 464, 468, 471, 472, 475, 477, 482, 486, 488, 490])
@@ -54,14 +75,15 @@ if __name__ == '__main__':
     # We are only going to evaluate the field along the line y = 0, z = 0. These are the y values for those points
     # Also, our convention will be to pack arrays so that the final index is the values associated w/ x
     # print(x_f)
+    py = single_pulse_sin()
+    px = np.linspace(0, 1, py.size)
+    pi = interpolate.interp1d(px * pulse_time, py * pulse_amp, kind='linear', fill_value='extrapolate')
+    poff = -pulse_time
 
     t_f = np.arange(stop=TIME_END, step=DT)
+    # new_pulse = multi_pulse(t_f, x_f)
 
-    x_mat = np.tile(x_f, (t_f.size, 1 ))
-    t_mat = np.transpose(np.tile(t_f, (x_f.size, 1 )))
-
-    pulse = gaussian(t_mat, x_mat)
-    pul = single_pulse()
+    # spulse = interpolate.interp1d(pul_x*5, pul*pulse_amp, kind='linear',fill_value='extrapolate')
 
     ani = animation.FuncAnimation(fig, animate, interval=20, blit=True, save_count=50)
     plt.show()
