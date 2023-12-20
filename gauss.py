@@ -28,7 +28,9 @@ if __name__ == '__main__':
     y = single_pulse(xpts)
     yy = interpolate.interp1d(xpts, y, kind='linear', fill_value='extrapolate')
 
-    plt.plot(xpts, yy(xpts+10))
+    yyy = np.interp(xpts+20, xpts, y, left=0, right=0)
+
+    plt.plot(xpts, yyy)
     plt.xlabel('t')
     plt.ylabel('y')
     plt.title('Gaussian Function')

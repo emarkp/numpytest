@@ -32,33 +32,25 @@ x_f = np.linspace(0, TIME_END, number_of_evaluation_points)
 line, = ax.plot(x_f, np.zeros(x_f.shape))
 
 
-def gaussian(t, y):
-    coefficient = 5 / (sigma * np.sqrt(2 * np.pi))
-    exponential_term = np.exp(-0.5 * ((c * t - y) / sigma) ** 2)
-    # exponential_term = np.exp(-0.5 * ((y + c * t - material_y_width / 4) / sigma) ** 2)
-    return coefficient * exponential_term
+def gaussian(t):
+    exponential_term = np.exp(-0.5 * ((t/sigma) ** 2))
+    return exponential_term
 
+# Returns pulse from about -15 to 15. Or can sim from -20 to 20
+# If propagating from right to left, I can calculate what the value would be for
+#  value(t,x) = single_pulse(20 - t*DT - x/c)
 
-def single_pulse_sin():
-    pulse = np.sin(np.linspace(0, 100, 200) * (2) * (np.pi / 100))
-    pulse[0] = pulse[-1] = 0
-    pulse[1] = pulse[-2] = 0
-    return pulse
-
-
-# def multi_pulse(t_f, x):
-#     r = np.empty((t_f.size, x.size))
-#     pul = interpolate.interp1d(px * pulse_time, py * pulse_amp, kind='linear', fill_value='extrapolate')
-#     for i in range(0, t_f.size):
-#         interp = pul(x - t_f[i])
-#         r[i, :] = interp
-#     return r
-
+def single_pulse(t):
+    eq =gaussian(t)*np.sin(t)
+    eq[0] = eq[1] = eq[-1] = eq[-2] = 0
+    return eq
 
 def animate(t):
     # pulse is the field at x=0 at time t=interp
     # So pulse at (t,xt) = xt - time to travel from x=0
-    line.set_ydata(pi((-x_f/c) + t))
+    # yd = np.interp((-x_f/c)+t, px*pulse_time, py*pulse_amp)
+    yyy = np.interp(xpts/c+20-t, xpts, y, left=0, right=0)
+    line.set_ydata(yyy)
     # line.set_ydata(pulse[t,:])
     # if (t < new_pulse[:,0].size):
     #     line.set_ydata(new_pulse[t,:])
@@ -75,14 +67,20 @@ if __name__ == '__main__':
     # We are only going to evaluate the field along the line y = 0, z = 0. These are the y values for those points
     # Also, our convention will be to pack arrays so that the final index is the values associated w/ x
     # print(x_f)
-    py = single_pulse_sin()
-    px = np.linspace(0, 1, py.size)
-    pi = interpolate.interp1d(px * pulse_time, py * pulse_amp, kind='linear', fill_value='extrapolate')
-    poff = -pulse_time
+    # py = single_pulse_sin()
+    # px = np.linspace(0, 1, py.size)
+    # intp = np.interp(x_f, px*pulse_time, py*pulse_amp)
+    # pi = interpolate.interp1d(px * pulse_time, py * pulse_amp, kind='linear', fill_value='interpolate', assume_sorted=True)
+    # poff = -pulse_time
 
-    t_f = np.arange(stop=TIME_END, step=DT)
+    # t_f = np.arange(stop=TIME_END, step=DT)
     # new_pulse = multi_pulse(t_f, x_f)
+    xpts = np.linspace(-25, 25, 1000)
+    y = single_pulse(xpts)
+    yy = interpolate.interp1d(xpts, y, kind='linear', fill_value='extrapolate')
 
+    yyy = np.interp(xpts+20, xpts, y, left=0, right=0)
+    #
     # spulse = interpolate.interp1d(pul_x*5, pul*pulse_amp, kind='linear',fill_value='extrapolate')
 
     ani = animation.FuncAnimation(fig, animate, interval=20, blit=True, save_count=50)
