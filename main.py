@@ -66,9 +66,27 @@ if __name__ == '__main__':
     tpts = np.linspace(-25, 25, 1000)
     y_pulse = single_pulse(tpts)
 
-    # yyy = np.interp(tpts+20, tpts, y, left=0, right=0)
-    #
-    # spulse = interpolate.interp1d(pul_x*5, pul*pulse_amp, kind='linear',fill_value='extrapolate')
+    yspacing = 1
+    ycount = 100
+    y_arr = np.linspace(yspacing/2, (ycount-1)*yspacing + yspacing/2, ycount)
+
+    zspacing = 1
+    zcount = 100
+    z_arr = np.linspace(zspacing/2, (zcount-1)*zspacing + zspacing/2, zcount)
+
+    y_mat = np.tile(y_arr, (zcount, 1))
+    z_mat = np.tile(z_arr, (ycount, 1)).transpose()
+
+    dist_mat = np.sqrt(np.square(y_mat) + np.square(z_mat))
+    dist_x_mat = np.ndarray((ycount, zcount, x_f.size))
+    for i in range(x_f.size):
+        dist_x_mat[:, :, i] = np.sqrt(np.square(y_mat) + np.square(z_mat) + np.square(x_f[i]))
+
+    time_x_mat = np.divide(dist_x_mat, c)
+    # e_scaling = (y^2/l^2-1)
+    e_scaling = np.tile(y_mat, (1, 1, x_f.size))
+    y_temp = np.repeat(y_mat[:, :, np.newaxis], x_f.size, axis=2)
+    e_scaling = np.sqrt(np.square(dist_x_mat) + np.square(y_temp))
 
     ani = animation.FuncAnimation(fig, animate, interval=20, blit=True, save_count=50)
     plt.show()
