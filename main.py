@@ -3,7 +3,6 @@ import matplotlib
 import itertools
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-from scipy import interpolate
 
 matplotlib.use('TkAgg')
 
@@ -16,8 +15,8 @@ charge_electron = 1 / number_of_electrons_wide ** 2  # this is to ensure the amo
 TIME_END = 100
 TIME_STEPS = 100
 DT = TIME_END / TIME_STEPS
-number_of_evaluation_points = 1000  # make this larger for more resolution in the x-axis
-c = 0.3  # speed of light
+number_of_evaluation_points = 100  # make this larger for more resolution in the x-axis
+c = 1  # speed of light
 hookes_constant = 0.1
 mass_electron = 1
 damping_constant = 0
@@ -40,6 +39,9 @@ def single_pulse(t):
     eq = gaussian(t)*np.sin(t)
     return eq
 
+def calc_at_x(t, time_delay_single, attenuation_single):
+    return np.inner(interp_times(t - time_delay_single), attenuation_single)
+
 def animate(t):
     # pulse is the field at x=0 at time t=interp
     # So pulse at (t,xt) = xt - time to travel from x=0
@@ -47,11 +49,20 @@ def animate(t):
     field = interp_times(x_f/c - t)
     line.set_ydata(field)
     # assert (x_f.size == np.shape(e_scaling)[2])
-    esum = np.zeros(x_f.shape)
+    # esum = np.zeros(x_f.shape)
     # eminor = interp_times(t-time_x_mat[i, :, :])*e_scaling[i, :, :]
-    for i in range(x_f.size):
-        val = np.sum(np.multiply(interp_times(t-time_x_mat[i, :, :]), e_scaling[i,:,:]))
-        esum[i] = val
+    # for i in range(x_f.size):
+    #     val = np.inner(interp_times(t-time_delay[i]), attenuation[i])
+    #     esum[i] = val
+
+    # esum = list(map(np.inner, interp_times(t-time_delay[i]), attenuation[i]))
+    esum = list(map(calc_at_x, [t]*len(x_f), time_delay, attenuation))
+    # max_val = np.abs(np.max(esum))
+    # if (max_val != 0):
+    #     esum = esum / max_val
+    # after_norm = np.max(esum)
+    # if after_norm > 2:
+    #     print(after_norm)
     e_field_line.set_ydata(esum)
 
     return line,e_field_line
@@ -81,44 +92,39 @@ if __name__ == '__main__':
     zcount = 100
     z_arr = np.linspace(zspacing/2, (zcount-1)*zspacing + zspacing/2, zcount)
 
-    all_2d_points = list(itertools.product(set(y_arr), set(z_arr)))
+    all_2d_points     = list(itertools.product(set(y_arr), set(z_arr)))
     dist_squared_list = list(map(square_point, all_2d_points))
-    y_squared_list = list(map(square_y_component, all_2d_points))
+    y_squared_list    = list(map(square_y_component, all_2d_points))
 
     # dist_squared_list.sort() # having the distances sorted may speed up interpolation
     #
     # dist_x_mat = np.ndarray((x_f.size, dist_squared_list.count()))
-    attenuation = [None]*x_f.size
-    time_delay = [None]*x_f.size
-    for i in range(x_f.size):
-        x = x_f[i]
+    attenuation = np.ndarray((x_f.size, len(all_2d_points)))
+    time_delay  = np.ndarray((x_f.size, len(all_2d_points)))
+    for xi in range(x_f.size):
+        x = x_f[xi]
         x2 = np.square(x)
-        points = list(all_2d_points)
         dist_squared_list = list(map(np.add, dist_squared_list, [x2]* len(dist_squared_list)))
 
         atten_list = np.divide(y_squared_list, dist_squared_list) - 1.0
         time_delay_list = np.divide(list(map(np.sqrt, dist_squared_list)), c)
         at = list(zip(time_delay_list, atten_list))
         at.sort()
-        attenuation[i] = np.array([x for x,y in at])
-        time_delay[i] = np.array([y for x,y in at])
+        attenuation[xi, :] = [x for x,y in at]
+        time_delay[xi, : ] = [y for x,y in at]
 
-    # time_x_mat = np.divide(dist_x_mat, c)
-    # # e_scaling = np.tile(y_mat, (1, 1, x_f.size))
-    # y_temp = np.repeat(y_mat[np.newaxis, :, :], x_f.size, axis=0)
-    #
     # # e_scaling = (y^2/l^2-1)
-    # e_scaling = np.divide(np.square(y_temp),np.square(dist_x_mat) + np.square(y_temp))-1
+    
+    fig, ax = plt.subplots(sharex=True, sharey=True, nrows=1, ncols=1)
+    line, = ax.plot(x_f, np.zeros(x_f.shape))
+    ax.set_ylim(-10, 10)
+    e_field = ax.twinx()
+    e_field.set_ylim(-100, 100)
+    e_field_line, = e_field.plot(x_f, np.zeros(x_f.shape), color="#FF0000", label="aggregate")
+    plt.show()
 
-    # ani = animation.FuncAnimation(fig, animate, interval=20, blit=True, save_count=50)
-    # plt.show()
+    ani = animation.FuncAnimation(fig, animate, interval=20, blit=True, save_count=50)
 
-    # fig, ax = plt.subplots(sharex=True, sharey=True, nrows=1, ncols=1)
-    # ax.set_ylim(-1, 1)
-    # line, = ax.plot(x_f, np.zeros(x_f.shape))
-    # e_field = ax.twinx()
-    # e_field_line, = e_field.plot(x_f, np.zeros(x_f.shape), color="#FF0000", label="aggregate")
-
-    points = [-50, -45, -30, -20, -10]
-    print (interp_times(points))
+    # points = [-50, -45, -30, -20, -10]
+    # print (interp_times(points))
     pass
